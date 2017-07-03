@@ -139,8 +139,6 @@ class liteMap:
         b = bufferFactor
         self.data = data[(b-1)/2*self.Ny:(b+1)/2*self.Ny,(b-1)/2*self.Nx:(b+1)/2*self.Nx]
         
-        
-
 
     def fillWithGRFFromTemplate(self,twodPower,bufferFactor = 1):
         """
@@ -209,9 +207,6 @@ class liteMap:
         self.data = data[(b-1)/2*self.Ny:(b+1)/2*self.Ny,(b-1)/2*self.Nx:(b+1)/2*self.Nx]
         
         
-
-
-
 
     def selectSubMap(self,x0,x1,y0,y1, safe = False, edge_treatment = False):
         """
@@ -529,6 +524,69 @@ class liteMap:
         self.wcs.header['PV2_1'] = map.wcs.header['PV2_1']
         self.wcs.updateFromHeader()
         self.header = self.wcs.header.copy()
+
+    def zeromask(self, ra, dec, hw = 5):
+        """
+        @brief mask the given (ra, dec) with an average value
+        @param ra: the right ascension of the mask location
+        @param dec: the declination of the mask location
+        @keyword hw: the halfwidth of the mask in pixels
+        @keyword mask_lo: the lower pixel distance of ring to compute avg value
+        @keyword mask_hi: the upper pixel distance of ring to compute avg value
+        @return the masked liteMap object
+        """
+        # get the pixel arrays
+        x = range(self.Nx)
+        y = range(self.Ny)
+
+        # make the grid of pixel indices
+        xx, yy = numpy.meshgrid(x, y)
+        
+        # the center pixels 
+        x0, y0 = self.skyToPix(ra, dec)
+        
+        # the pixel distances from center
+        dist = numpy.sqrt((xx - x0)**2 + (yy - y0)**2)
+
+        # mask the data
+        i, j = numpy.where(dist < hw)
+        self.data[i,j] = 0.   
+
+    def mask(self, ra, dec, hw = 7, mask_lo=15, mask_hi=25):
+        """
+        @brief mask the given (ra, dec) with an average value
+        @param ra: the right ascension of the mask location
+        @param dec: the declination of the mask location
+        @keyword hw: the halfwidth of the mask in pixels
+        @keyword mask_lo: the lower pixel distance of ring to compute avg value
+        @keyword mask_hi: the upper pixel distance of ring to compute avg value
+        @return the masked liteMap object
+        """
+        # compute a masked copy
+        masked = self.copy()
+        
+        # get the pixel arrays
+        x = range(masked.Nx)
+        y = range(masked.Ny)
+
+        # make the grid of pixel indices
+        xx, yy = numpy.meshgrid(x, y)
+        
+        # the center pixels 
+        x0, y0 = masked.skyToPix(ra, dec)
+        
+        # the pixel distances from center
+        dist = numpy.sqrt((xx - x0)**2 + (yy - y0)**2)
+
+        # compute the average value to fill in
+        a,b = numpy.where((dist > mask_lo) * (dist < mask_hi))
+        avg = numpy.mean(masked.data[a,b])
+
+        # mask the data
+        i, j = numpy.where(dist < hw)
+        masked.data[i,j] = avg
+
+        return masked
         
 def liteMapsFromEnlibFits(fname):
     hdu = pyfits.open(fname)[0]
