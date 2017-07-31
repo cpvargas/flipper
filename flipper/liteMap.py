@@ -228,8 +228,8 @@ class liteMap:
 
         ix0,iy0 = self.skyToPix(x0,y0)
         ix1,iy1 = self.skyToPix(x1,y1)
-        assert (ix0 >0) & (ix1>0)
-        assert (iy0 >0) & (iy1>0)
+        #assert (ix0 >0) & (ix1>0)
+        #assert (iy0 >0) & (iy1>0)
         i0 = np.int(ix0+0.5)
         j0 = np.int(iy0+0.5)
         i1 = np.int(ix1+0.5)
@@ -551,6 +551,19 @@ class liteMap:
         # mask the data
         i, j = numpy.where(dist < hw)
         self.data[i,j] = 0.   
+
+    def onemask(self, ra, dec, hw = 5):
+        x = range(self.Nx)
+        y = range(self.Ny)
+
+        xx, yy = numpy.meshgrid(x, y)
+        
+        x0, y0 = self.skyToPix(ra, dec)
+        
+        dist = numpy.sqrt((xx - x0)**2 + (yy - y0)**2)
+
+        i, j = numpy.where(dist < hw)
+        self.data[i,j] = 1.
 
     def mask(self, ra, dec, hw = 7, mask_lo=15, mask_hi=25):
         """
